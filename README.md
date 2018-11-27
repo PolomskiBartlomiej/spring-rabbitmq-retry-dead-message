@@ -1,0 +1,1 @@
+# spring-rabbitmq-messages-procces
