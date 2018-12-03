@@ -1,1 +1,1 @@
-# spring-rabbitmq-rety-dead-message
+# spring-rabbitmq-retry-dead-message
