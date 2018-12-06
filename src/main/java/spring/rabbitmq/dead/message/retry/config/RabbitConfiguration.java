@@ -12,8 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 class RabbitConfiguration {
 
-    @Bean
-    RabbitTemplate
+    @Bean RabbitTemplate
     rabbitTemplate(ConnectionFactory factory) {
         RabbitTemplate rabbitTemplate = new RabbitTemplate(factory);
         rabbitTemplate.setMessageConverter(converter());
@@ -21,8 +20,8 @@ class RabbitConfiguration {
         return rabbitTemplate;
     }
 
-    @Bean
-    MessageConverter converter() {
+    @Bean MessageConverter
+    converter() {
         return new Jackson2JsonMessageConverter();
     }
 }

@@ -17,24 +17,19 @@ import static spring.rabbitmq.dead.message.retry.config.MessagesNamespaces.DEAD_
 @Configuration
 class RabbitDLQConfiguration {
 
-    @Bean
-    @DeadLetter
-    Exchange
+    @Bean @DeadLetter Exchange
     deadLetterExchange() {
        return ExchangeBuilder.directExchange(DEAD_LETTER_EXCHANGE).build();
     }
 
-    @Bean
-    @DeadLetter
-    Queue
+    @Bean @DeadLetter Queue
     deadQueue() {
         return QueueBuilder
                 .durable(DEAD_LETTER_QUEUE)
                 .build();
     }
 
-    @Bean
-    Binding
+    @Bean Binding
     deadLetterBind(@DeadLetter Queue queue, @DeadLetter Exchange exchange) {
         return BindingBuilder.bind(queue).to(exchange).with(DEAD_LETTER_QUEUE).noargs();
     }

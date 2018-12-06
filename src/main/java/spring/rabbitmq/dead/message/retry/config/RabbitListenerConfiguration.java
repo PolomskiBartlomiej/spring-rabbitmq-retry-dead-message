@@ -16,15 +16,15 @@ class RabbitListenerConfiguration implements RabbitListenerConfigurer {
         registrar.setMessageHandlerMethodFactory(handlerMethodFactory());
     }
 
-    @Bean
-    DefaultMessageHandlerMethodFactory handlerMethodFactory() {
+    @Bean DefaultMessageHandlerMethodFactory
+    handlerMethodFactory() {
         DefaultMessageHandlerMethodFactory factory = new DefaultMessageHandlerMethodFactory();
         factory.setMessageConverter(messageConverter());
         return factory;
     }
 
-    @Bean
-    MessageConverter messageConverter() {
+    @Bean MessageConverter
+    messageConverter() {
         return new MappingJackson2MessageConverter();
     }
 }
