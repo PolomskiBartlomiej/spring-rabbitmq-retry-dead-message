@@ -5,6 +5,7 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import static org.apache.commons.collections4.ListUtils.emptyIfNull;
 import static spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.MessagesNamespaces.DEAD_LETTER_QUEUE;
 
 @Log4j2
+@Component
 @RequiredArgsConstructor
 class DeadMessagePublisher {
 
