@@ -1,4 +1,4 @@
-package spring.rabbitmq.dead.message.retry.config;
+package spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config;
 
 import org.springframework.amqp.rabbit.annotation.RabbitListenerConfigurer;
 import org.springframework.amqp.rabbit.listener.RabbitListenerEndpointRegistrar;

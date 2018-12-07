@@ -1,4 +1,4 @@
-package spring.rabbitmq.dead.message.retry.model;
+package spring.rabbitmq.dead.message.retry.app.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

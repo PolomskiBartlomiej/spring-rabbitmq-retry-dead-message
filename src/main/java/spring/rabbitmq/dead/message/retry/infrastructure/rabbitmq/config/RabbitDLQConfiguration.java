@@ -1,4 +1,4 @@
-package spring.rabbitmq.dead.message.retry.config;
+package spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
@@ -8,11 +8,10 @@ import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import spring.rabbitmq.dead.message.retry.config.bind.DeadLetter;
+import spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.bind.DeadLetter;
 
-import static spring.rabbitmq.dead.message.retry.config.MessagesNamespaces.DEAD_LETTER_EXCHANGE;
-import static spring.rabbitmq.dead.message.retry.config.MessagesNamespaces.DEAD_LETTER_QUEUE;
-
+import static spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.MessagesNamespaces.DEAD_LETTER_EXCHANGE;
+import static spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.MessagesNamespaces.DEAD_LETTER_QUEUE;
 
 @Configuration
 class RabbitDLQConfiguration {

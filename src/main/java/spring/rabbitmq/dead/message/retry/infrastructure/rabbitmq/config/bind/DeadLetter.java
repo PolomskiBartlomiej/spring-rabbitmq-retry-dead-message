@@ -1,4 +1,4 @@
-package spring.rabbitmq.dead.message.retry.config.bind;
+package spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.bind;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 
