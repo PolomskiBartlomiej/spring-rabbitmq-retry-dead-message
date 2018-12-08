@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.apache.commons.collections4.ListUtils.emptyIfNull;
+import static spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.MessagesNamespaces.DEAD_LETTER_EXCHANGE;
 import static spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.MessagesNamespaces.DEAD_LETTER_QUEUE;
 
 @Log4j2
@@ -21,6 +22,8 @@ class DeadMessagePublisher {
 
     private static final String X_RETRIES_HEADER = "x-retries";
     private static final String ROUTING_KEY = "routing-keys";
+    private static final String EXCHANGE = "exchange";
+
     private static final int ONE_MIN = 60000;
 
     private final RabbitTemplate rabbitTemplate;
@@ -33,7 +36,7 @@ class DeadMessagePublisher {
             messageConfig.setDelay(ONE_MIN);
 
             final String routingKey = messageConfig.getOriginalRoutingKey().orElse(DEAD_LETTER_QUEUE);
-            final String exchange = routingKey;
+            final String exchange = messageConfig.getOriginalExchange().orElse(DEAD_LETTER_EXCHANGE);
 
             log.debug("Resend message to "
                     + failedMessage +
@@ -53,9 +56,11 @@ class DeadMessagePublisher {
     private static class MessageConfig {
 
         private final MessageProperties properties;
+        private final List<Map<String, ? >> xdeaths;
 
         MessageConfig(final Message message) {
             this.properties = message.getMessageProperties();
+            this.xdeaths = (List<Map<String,?>>) properties.getHeaders().get("x-death");
         }
 
         Optional<Integer> getRetry() {
@@ -63,15 +68,11 @@ class DeadMessagePublisher {
         }
 
         Optional<String> getOriginalRoutingKey() {
-            List<Map<String, ? >> xdeaths =  (List<Map<String,?>>) properties.getHeaders().get("x-death");
+            return getKey(ROUTING_KEY);
+        }
 
-            return emptyIfNull(xdeaths).stream()
-                    .filter(map -> map.containsKey(ROUTING_KEY))
-                    .map(map -> map.get(ROUTING_KEY))
-                    .map(List.class::cast)
-                    .map(routingKeys -> routingKeys.get(0))
-                    .map(String.class::cast)
-                    .findAny();
+        Optional<String> getOriginalExchange() {
+            return getKey(EXCHANGE);
         }
 
         void decrementRetry(final int retries) {
@@ -80,6 +81,16 @@ class DeadMessagePublisher {
 
         void setDelay(final Integer integer) {
             properties.setDelay(integer);
+        }
+
+        private Optional<String> getKey(final String key) {
+           return emptyIfNull(xdeaths).stream()
+                    .filter(map -> map.containsKey(key))
+                    .map(map -> map.get(key))
+                    .map(List.class::cast)
+                    .map(routingKeys -> routingKeys.get(0))
+                    .map(String.class::cast)
+                    .findAny();
         }
     }
 }
