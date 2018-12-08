@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.apache.commons.collections4.ListUtils.emptyIfNull;
 import static spring.rabbitmq.dead.message.retry.infrastructure.rabbitmq.config.MessagesNamespaces.DEAD_LETTER_EXCHANGE;
@@ -30,7 +31,7 @@ class DeadMessagePublisher {
 
     boolean resendMessageWithDelay(Message failedMessage) {
         final MessageConfig messageConfig = new MessageConfig(failedMessage);
-        final int retry = messageConfig.getRetry().orElse(0);
+        final long retry = messageConfig.getRetry().orElse(0L);
         if (retry > 0) {
             messageConfig.decrementRetry(retry);
             messageConfig.setDelay(ONE_MIN);
@@ -63,19 +64,25 @@ class DeadMessagePublisher {
             this.xdeaths = (List<Map<String,?>>) properties.getHeaders().get("x-death");
         }
 
-        Optional<Integer> getRetry() {
-           return Optional.ofNullable((Integer) properties.getHeaders().get(X_RETRIES_HEADER));
+        Optional<Long> getRetry() {
+           return Optional.ofNullable((Long) properties.getHeaders().get(X_RETRIES_HEADER));
         }
 
         Optional<String> getOriginalRoutingKey() {
-            return getKey(ROUTING_KEY);
+            return getKeyObject(ROUTING_KEY)
+                    .map(List.class::cast)
+                    .map(routingKeys -> routingKeys.get(0))
+                    .map(String.class::cast)
+                    .findAny();
         }
 
         Optional<String> getOriginalExchange() {
-            return getKey(EXCHANGE);
+            return getKeyObject(EXCHANGE)
+                    .map(String.class::cast)
+                    .findAny();
         }
 
-        void decrementRetry(final int retries) {
+        void decrementRetry(final long retries) {
             properties.getHeaders().put(X_RETRIES_HEADER, retries - 1);
         }
 
@@ -83,14 +90,12 @@ class DeadMessagePublisher {
             properties.setDelay(integer);
         }
 
-        private Optional<String> getKey(final String key) {
-           return emptyIfNull(xdeaths).stream()
+        private Stream<?> getKeyObject(String key) {
+            return emptyIfNull(xdeaths).stream()
                     .filter(map -> map.containsKey(key))
-                    .map(map -> map.get(key))
-                    .map(List.class::cast)
-                    .map(routingKeys -> routingKeys.get(0))
-                    .map(String.class::cast)
-                    .findAny();
+                    .map(map -> map.get(key));
         }
+
+
     }
 }
