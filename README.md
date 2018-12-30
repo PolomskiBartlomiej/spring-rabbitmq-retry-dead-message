@@ -39,10 +39,10 @@ To add header in Spring Ampq we have to option :
        
  **2. Dead letter be retry to original queue with one minut delay**
  
- To retry with delay need 3 component:
+ To retry with delay need 4 component:
 - Dlq Listner - to recevice message from Dlq
 - RetryPublisher - to resend message with retry
-- delayed message exchange pluggin
+- delayed message exchange plugin
 - xdeath properties from dlq  
 
 1. Dead Letter Listener:
@@ -73,7 +73,7 @@ Retry Publisher will resend messeage to original queue using rabbitTemplate :
 
     boolean resendMessageWithDelay(Message failedMessage) {
         final MessageConfig messageConfig = new MessageConfig(failedMessage);
-        final long retry = messageConfig.getRetry().orElse(0L);
+        final long retry = messageConfig.getRetry().orElse(1L);
         if (retry > 0) {
             messageConfig.decrementRetry(retry);
             messageConfig.setDelay(ONE_MIN);
@@ -140,5 +140,58 @@ where MessageCongifg is:
                     .map(map -> map.get(key));
         }
         }
+        
+   3. delayed message exchange plugin
+   
+   To add delayed we must install delayed plugin : ([Delayed Plugin](https://github.com/PolomskiBartlomiej/spring-rabbitmq-delayed-exchange))
+  
+  and to set delay :
+        
+         message.getMessageProperties().setDelay(integer);
+   
+   4. xdeath properties from dlq
+   
+   Xdeath header is dlq header which is contains information about origianal message. ([Dead Letter Queue](https://github.com/PolomskiBartlomiej/spring-rabbitmq-dead-letter-queue)).
+   
+   get x-death information:
+        
+        xdeaths = (List<Map<String,?>>) properties.getHeaders().get("x-death");
+  
+   get original exchange :
+        
+        emptyIfNull(xdeaths).stream()
+                    .filter(map -> map.containsKey(key))
+                    .map(map -> map.get(key))
+                    .map(String.class::cast)
+                    .findAny();
+                    
+   get original routing:
+        
+        emptyIfNull(xdeaths).stream()
+                    .filter(map -> map.containsKey(key))
+                    .map(map -> map.get(key))
+                    .map(List.class::cast)
+                    .map(routingKeys -> routingKeys.get(0))
+                    .map(String.class::cast)
+                    .findAny();
+        
+  **3. If we dont set up quality of retry, then message will be retry once**
+ 
+ To pass this assumption we need only to get rety from header :
+        
+        Optional<Long> getRetry() {
+           return Optional.ofNullable((Long) properties.getHeaders().get(X_RETRIES_HEADER));
+        }
+        
+  and and if is empty, set default value:
+        
+        ...
+        boolean resendMessageWithDelay(Message failedMessage) {
+            final MessageConfig messageConfig = new MessageConfig(failedMessage);
+            final long retry = messageConfig.getRetry().orElse(1L);
+        ...
+        }
+ 
+        
         
  
