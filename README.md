@@ -66,20 +66,19 @@ Retry Publisher will resend messeage to original queue using rabbitTemplate :
    
     class RetryPublisher {
  
-    private static final String X_RETRIES_HEADER = "x-retries";
     private static final int ONE_MIN = 60000;
 
     private final RabbitTemplate rabbitTemplate;
 
     boolean resendMessageWithDelay(Message failedMessage) {
-        final MessageConfig messageConfig = new MessageConfig(failedMessage);
-        final long retry = messageConfig.getRetry().orElse(1L);
+        final MessageConfig headerConfig = new MessageHeaderConfig(failedMessage);
+        final long retry = headerConfig.getRetry().orElse(1L);
         if (retry > 0) {
-            messageConfig.decrementRetry(retry);
-            messageConfig.setDelay(ONE_MIN);
+            headerConfig.decrementRetry(retry);
+            headerConfig.setDelay(ONE_MIN);
 
-            final String routingKey = messageConfig.getOriginalRoutingKey().orElse(DEAD_LETTER_QUEUE);
-            final String exchange = messageConfig.getOriginalExchange().orElse(DEAD_LETTER_EXCHANGE);
+            final String routingKey = headerConfig.getOriginalRoutingKey().orElse(DEAD_LETTER_QUEUE);
+            final String exchange = headerConfig.getOriginalExchange().orElse(DEAD_LETTER_EXCHANGE);
 
             log.debug("Resend message to " + failedMessage +
                       " with routing to " + routingKey +
@@ -95,15 +94,16 @@ Retry Publisher will resend messeage to original queue using rabbitTemplate :
 
 where MessageCongifg is: 
 
-    private static class MessageConfig {
-    
+     private static class MessageHeaderConfig {
+
         private static final String ROUTING_KEY = "routing-keys";
         private static final String EXCHANGE = "exchange";
-        
+        private static final String X_RETRIES_HEADER = "x-retries";
+
         private final MessageProperties properties;
         private final List<Map<String, ? >> xdeaths;
 
-        MessageConfig(final Message message) {
+        MessageHeaderConfig(final Message message) {
             this.properties = message.getMessageProperties();
             this.xdeaths = (List<Map<String,?>>) properties.getHeaders().get("x-death");
         }
@@ -113,32 +113,33 @@ where MessageCongifg is:
         }
 
         Optional<String> getOriginalRoutingKey() {
-            return getKeyObject(ROUTING_KEY)
-                    .map(List.class::cast)
-                    .map(routingKeys -> routingKeys.get(0))
-                    .map(String.class::cast)
-                    .findAny();
+            return getKeyObject()
+                    .andThen(option -> option.map(List.class::cast)
+                                             .map(routingKeys -> routingKeys.get(0))
+                                             .map(String.class::cast))
+                    .apply(ROUTING_KEY);
+
+
         }
 
         Optional<String> getOriginalExchange() {
-            return getKeyObject(EXCHANGE)
-                    .map(String.class::cast)
-                    .findAny();
+            return getKeyObject()
+                    .andThen(option -> option.map(String.class::cast))
+                    .apply(EXCHANGE);
         }
 
         void decrementRetry(final long retries) {
             properties.getHeaders().put(X_RETRIES_HEADER, retries - 1);
         }
 
-        void setDelay(final Integer integer) {
-            properties.setDelay(integer);
+        void setDelay(final Integer delay) {
+            properties.setDelay(delay);
         }
 
-        private Stream<?> getKeyObject(String key) {
-            return emptyIfNull(xdeaths).stream()
-                    .filter(map -> map.containsKey(key))
-                    .map(map -> map.get(key));
-        }
+        private Function<String,Optional<?>> getKeyObject() {
+            return key -> emptyIfNull(xdeaths).isEmpty()
+                    ? Optional.empty()
+                    : Optional.ofNullable(xdeaths.get(0).computeIfAbsent(key, k -> null));
         }
         
    3. delayed message exchange plugin
@@ -157,23 +158,6 @@ where MessageCongifg is:
         
         xdeaths = (List<Map<String,?>>) properties.getHeaders().get("x-death");
   
-   get original exchange :
-        
-        emptyIfNull(xdeaths).stream()
-                    .filter(map -> map.containsKey(key))
-                    .map(map -> map.get(key))
-                    .map(String.class::cast)
-                    .findAny();
-                    
-   get original routing:
-        
-        emptyIfNull(xdeaths).stream()
-                    .filter(map -> map.containsKey(key))
-                    .map(map -> map.get(key))
-                    .map(List.class::cast)
-                    .map(routingKeys -> routingKeys.get(0))
-                    .map(String.class::cast)
-                    .findAny();
         
   **3. If we dont set up quality of retry, then message will be retry once**
  
